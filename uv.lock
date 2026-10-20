@@ -1,6 +1,6 @@
 version = 1
-revision = 5
-requires-python = "==3.11.*"
+revision = 3
+requires-python = ">=3.11, <4.0"
 
 [[package]]
 name = "colorama"
@@ -148,12 +148,20 @@ dev = [
     { name = "pytest" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
     { name = "textual", specifier = ">=0.80,<1" },
 ]
 provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8" }]
 
 [[package]]
 name = "textual"

@@ -8,7 +8,7 @@ Shipwright turns a reproducible GitHub issue into a tested, reviewable patch. It
 
 ## Rebuild from scratch on Linux
 
-The project pins Python 3.11.2 in [`.python-version`](.python-version) and locks Python dependencies in [`uv.lock`](uv.lock). The canonical clean-machine workflow uses [uv](https://docs.astral.sh/uv/).
+The project pins Python 3.14.7 in [`.python-version`](.python-version) and locks Python dependencies in [`uv.lock`](uv.lock). The canonical clean-machine workflow uses [uv](https://docs.astral.sh/uv/).
 
 ```bash
 git clone https://github.com/VIKSIT-GARG/SHIPWRIGHT.git
@@ -16,6 +16,10 @@ cd SHIPWRIGHT
 
 # Install uv if it is not already available.
 curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install the pinned Python runtime. uv does not always download missing
+# interpreters automatically on Linux.
+uv python install 3.14.7
 
 # Start a locked environment using the pinned Python runtime.
 uv sync --locked --all-extras
@@ -71,13 +75,14 @@ See [`docs/PLAN.md`](docs/PLAN.md) for the architecture and delivery plan.
 
 ### 1. Requirements
 
-- Python 3.11.2 when using the pinned native workflow.
+- Python 3.14.7 when using the pinned native workflow.
 - Optional: [Ollama](https://ollama.com/) for local model execution.
 - Git for repository worktrees and source control.
 
 ### 2. Install
 
 ```bash
+uv python install 3.14.7
 uv sync --locked --all-extras
 ```
 
@@ -257,6 +262,15 @@ On Linux, `--add-host=host.docker.internal:host-gateway` lets the container reac
 Run the project's final verification command from the repository root:
 
 ```bash
+uv run python -m pytest -q
+```
+
+If uv reports `No interpreter found for Python 3.14.7`, run this once and
+repeat the sync command:
+
+```bash
+uv python install 3.14.7
+uv sync --locked --all-extras
 uv run python -m pytest -q
 ```
 
