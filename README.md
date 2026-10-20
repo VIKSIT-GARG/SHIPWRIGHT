@@ -6,6 +6,36 @@ Shipwright turns a reproducible GitHub issue into a tested, reviewable patch. It
 
 > Early open-source preview: the TUI and provider layer are usable now. The isolated worktree runner, agent orchestration loop, and GitHub PR delivery are being built behind the same interfaces.
 
+## Rebuild from scratch on Linux
+
+The project pins Python 3.11.2 in [`.python-version`](.python-version) and locks Python dependencies in [`uv.lock`](uv.lock). The canonical clean-machine workflow uses [uv](https://docs.astral.sh/uv/).
+
+```bash
+git clone https://github.com/VIKSIT-GARG/SHIPWRIGHT.git
+cd SHIPWRIGHT
+
+# Install uv if it is not already available.
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Start a locked environment using the pinned Python runtime.
+uv sync --locked --all-extras
+
+# Run the complete test suite.
+uv run --locked pytest -q
+
+# Launch the terminal operator console.
+uv run --locked shipwright
+```
+
+The repository also includes a Docker build for environments without a local Python setup:
+
+```bash
+docker build --pull -t shipwright:local .
+docker run --rm -it --init -e TERM=xterm-256color shipwright:local
+```
+
+The Docker image runs the Textual console and therefore needs an interactive terminal. Exit the console with `q`. Ollama is intentionally not bundled into the image; run Ollama separately and pass its endpoint with environment variables when using `shipwright-chat`.
+
 ## What it does
 
 The target workflow is:
@@ -41,22 +71,20 @@ See [`docs/PLAN.md`](docs/PLAN.md) for the architecture and delivery plan.
 
 ### 1. Requirements
 
-- Python 3.11 or newer.
+- Python 3.11.2 when using the pinned native workflow.
 - Optional: [Ollama](https://ollama.com/) for local model execution.
 - Git for repository worktrees and source control.
 
 ### 2. Install
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -e '.[dev]'
+uv sync --locked --all-extras
 ```
 
 ### 3. Launch the operator console
 
 ```bash
-shipwright
+uv run --locked shipwright
 ```
 
 The current UI runs with deterministic fixture runs so the interaction can be evaluated before connecting a repository.
@@ -66,16 +94,29 @@ The current UI runs with deterministic fixture runs so the interaction can be ev
 The default provider is local Ollama:
 
 ```bash
-ollama serve
+ollama serve  # run in a separate terminal
 ollama pull qwen2.5-coder:7b
-SHIPWRIGHT_MODEL=qwen2.5-coder:7b shipwright-chat "Explain how Shipwright should isolate a coding run."
+SHIPWRIGHT_MODEL=qwen2.5-coder:7b uv run --locked shipwright-chat "Explain how Shipwright should isolate a coding run."
 ```
 
 You can also use the module form:
 
 ```bash
-python -m shipwright.cli "Give me a one-sentence test plan."
+uv run --locked python -m shipwright.cli "Give me a one-sentence test plan."
 ```
+
+### Environment settings
+
+Copy [`.env.example`](.env.example) to `.env` as a reference, then export the values in your shell. Shipwright does not load dotenv files automatically:
+
+```bash
+cp .env.example .env
+set -a
+. ./.env
+set +a
+```
+
+Keep `.env` local. Never commit provider keys.
 
 ## Provider configuration
 
@@ -160,20 +201,56 @@ Shipwright is built to make autonomous changes reviewable rather than invisible:
 Run the test suite:
 
 ```bash
-python3 -m pytest -q
+uv run --locked pytest -q
 ```
 
 Compile-check the package:
 
 ```bash
-python3 -m compileall -q shipwright tests
+uv run --locked python -m compileall -q shipwright tests
+```
+
+Check the dependency lock and build a wheel:
+
+```bash
+uv lock --check
+uv build
 ```
 
 Run a provider smoke test against a running Ollama instance:
 
 ```bash
-SHIPWRIGHT_MODEL=qwen2.5-coder:7b shipwright-chat "Reply with exactly: SHIPWRIGHT_OK"
+SHIPWRIGHT_MODEL=qwen2.5-coder:7b uv run --locked shipwright-chat "Reply with exactly: SHIPWRIGHT_OK"
 ```
+
+### Exact build, test, and run commands
+
+```bash
+# Native Linux
+uv sync --locked --all-extras
+uv run --locked pytest -q
+uv run --locked shipwright
+```
+
+```bash
+# Docker
+docker build --pull -t shipwright:local .
+docker run --rm -it --init -e TERM=xterm-256color shipwright:local
+```
+
+For the non-interactive provider command in Docker:
+
+```bash
+docker run --rm \
+  -e SHIPWRIGHT_PROVIDER=ollama \
+  -e SHIPWRIGHT_BASE_URL=http://host.docker.internal:11434 \
+  -e SHIPWRIGHT_MODEL=qwen2.5-coder:7b \
+  --add-host=host.docker.internal:host-gateway \
+  shipwright:local \
+  shipwright-chat "Reply with exactly: SHIPWRIGHT_OK"
+```
+
+On Linux, `--add-host=host.docker.internal:host-gateway` lets the container reach an Ollama server running on the host.
 
 ## Repository layout
 
