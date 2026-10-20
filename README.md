@@ -252,6 +252,33 @@ docker run --rm \
 
 On Linux, `--add-host=host.docker.internal:host-gateway` lets the container reach an Ollama server running on the host.
 
+## Final project check
+
+Run the project's final verification command from the repository root:
+
+```bash
+uv run python -m pytest -q
+```
+
+## Push the latest changes to GitHub
+
+After editing or updating Shipwright, run:
+
+```bash
+git status
+git add README.md
+git commit -m "docs: finalize rebuild and release commands"
+git push origin main
+```
+
+Verify the published branch:
+
+```bash
+git status --short --branch
+git log --oneline -3
+git ls-remote --heads origin main
+```
+
 ## Repository layout
 
 ```text
