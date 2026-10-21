@@ -88,8 +88,8 @@ DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
 DEFAULT_ANTHROPIC_BASE_URL = "https://api.anthropic.com"
 DEFAULT_ANTHROPIC_MODEL = "claude-3-5-sonnet-latest"
 DEFAULT_GEMINI_BASE_URL = "https://generativelanguage.googleapis.com"
-DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
-DEFAULT_TIMEOUT = 60.0
+DEFAULT_GEMINI_MODEL = "gemini-flash-latest"
+DEFAULT_TIMEOUT = 180.0
 
 OPENAI_COMPATIBLE_PRESETS: dict[str, str] = {
     "openai": DEFAULT_OPENAI_BASE_URL,
