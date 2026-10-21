@@ -1,6 +1,12 @@
+"""Domain models for Shipwright runs, timeline events, artifacts, and reviews."""
+
+from __future__ import annotations
+
+import json
+import time
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Iterable
+from typing import Any
 
 
 class RunState(StrEnum):
@@ -9,10 +15,12 @@ class RunState(StrEnum):
     PLANNED = "PLANNED"
     IMPLEMENTING = "IMPLEMENTING"
     VERIFYING = "VERIFYING"
+    REPAIRING = "REPAIRING"
     REVIEWING = "REVIEWING"
     READY_FOR_APPROVAL = "READY_FOR_APPROVAL"
-    BLOCKED = "BLOCKED"
     EXPORTED = "EXPORTED"
+    BLOCKED = "BLOCKED"
+    CANCELLED = "CANCELLED"
 
 
 @dataclass(slots=True)
@@ -23,18 +31,77 @@ class TimelineEvent:
 
 
 @dataclass(slots=True)
+class Issue:
+    number: int
+    title: str
+    body: str
+    source: str = "manual"
+    labels: list[str] = field(default_factory=list)
+    url: str = ""
+
+
+@dataclass(slots=True)
+class Repository:
+    root: str
+    default_branch: str = "main"
+    test_cmd: str | None = None
+    remote_url: str | None = None
+
+
+@dataclass(slots=True)
+class Artifact:
+    name: str
+    path: str = ""
+    content: str = ""
+    checksum: str = ""
+    size: int = 0
+    artifact_type: str = "text"
+
+    def __str__(self) -> str:
+        return self.name
+
+
+@dataclass(slots=True)
+class Review:
+    passed: bool
+    confidence: float
+    summary: str
+    findings: list[Any] = field(default_factory=list)
+    findings_json: str = "[]"
+    run_number: int | None = None
+
+    def __post_init__(self) -> None:
+        if self.findings and (self.findings_json == "[]" or not self.findings_json):
+            object.__setattr__(self, "findings_json", json.dumps(self.findings))
+        elif not self.findings and self.findings_json and self.findings_json != "[]":
+            try:
+                object.__setattr__(self, "findings", json.loads(self.findings_json))
+            except Exception:
+                object.__setattr__(self, "findings", [])
+
+
+@dataclass(slots=True)
 class Run:
     number: int
     title: str
     state: RunState
-    elapsed: str
-    agents: str
-    tests: str
+    elapsed: str = "00:00"
+    agents: str = "0 / 4"
+    tests: str = "pending"
     events: list[TimelineEvent] = field(default_factory=list)
-    artifacts: list[str] = field(default_factory=list)
+    artifacts: list[Artifact | str] = field(default_factory=list)
+    issue: Issue | None = None
+    repo_path: str = ""
+    worktree_path: str = ""
+    branch: str = ""
+    attempt: int = 0
+    max_attempts: int = 3
+    review: Review | None = None
+    error: str | None = None
+    created_at: float = field(default_factory=time.time)
 
 
-def fixture_runs() -> Iterable[Run]:
+def fixture_runs() -> list[Run]:
     return [
         Run(
             1842,
@@ -54,3 +121,15 @@ def fixture_runs() -> Iterable[Run]:
         Run(1839, "Handle null config", RunState.REVIEWING, "08:51", "3 / 3", "18 passed"),
         Run(1828, "Pin dependency", RunState.READY_FOR_APPROVAL, "12:03", "3 / 3", "96 passed"),
     ]
+
+
+__all__ = [
+    "RunState",
+    "TimelineEvent",
+    "Issue",
+    "Repository",
+    "Artifact",
+    "Review",
+    "Run",
+    "fixture_runs",
+]

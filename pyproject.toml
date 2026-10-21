@@ -30,7 +30,7 @@ dev = ["pytest>=8"]
 default-groups = ["dev"]
 
 [project.scripts]
-shipwright = "shipwright.tui:main"
+shipwright = "shipwright.cli:main"
 shipwright-chat = "shipwright.cli:main"
 
 [tool.pytest.ini_options]
